@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>CityMatch Mobile</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+  <link rel="apple-touch-icon" href="https://emojicdn.elk.sh/💕" />
+  <style>
+    html, body {
+      max-width: 100vw;
+      overflow-x: hidden;
+      background: #f3f4f6;
+    }
+    .mobile-bg {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    .card-mobile {
+      box-shadow: 0 6px 20px rgba(0,0,0,0.07);
+      border-radius: 24px;
+    }
+    .bottom-nav {
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      background: #fff;
+      border-top: 1px solid #e5e7eb;
+      display: flex;
+      justify-content: space-around;
+      padding: .5rem 0;
+      z-index: 30;
+      max-width: 430px;
+      margin: auto;
+    }
+    input, select {
+      font-size: 16px !important;
+    }
+  </style>
+</head>
+<body class="mobile-bg min-h-screen flex flex-col items-center justify-center">
+  <div id="root"></div>
+  <script type="text/babel">
+
+// Config Firebase à personnaliser ensuite
+const firebaseConfig = {
+  apiKey: "A_REMPLACER",
+  authDomain: "A_REMPLACER",
+  projectId: "A_REMPLACER",
+  appId: "A_REMPLACER",
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+const { useState, useEffect } = React;
+
+const worldCities = [
+  { name: "Libreville", country: "Gabon", flag: "🇬🇦" },
+  { name: "Port-Gentil", country: "Gabon", flag: "🇬🇦" },
+  { name: "Akanda", country: "Gabon", flag: "🇬🇦" },
+  { name: "Paris", country: "France", flag: "🇫🇷" },
+  { name: "New York", country: "USA", flag: "🇺🇸" },
+  { name: "London", country: "UK", flag: "🇬🇧" }
+];
+
+function AuthScreen({ onAuth }) {
+  const [isSignUp, setIsSignUp] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [name, setName] = useState('');
+  const [city, setCity] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      let userCred;
+      if (isSignUp) {
+        userCred = await auth.createUserWithEmailAndPassword(email, password);
+        await userCred.user.updateProfile({ displayName: name });
+        userCred.user.city = city;
+      } else {
+        userCred = await auth.signInWithEmailAndPassword(email, password);
+      }
+      setLoading(false);
+      onAuth(userCred.user);
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-screen w-full px-4">
+      <div className="w-full max-w-xs bg-white card-mobile px-6 py-8 mt-6">
+        <div className="text-center mb-6">
+          <div className="text-5xl mb-2">💕</div>
+          <div className="text-2xl font-bold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-2">CityMatch</div>
+          <div className="text-xs text-gray-500">Mobile Only</div>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {isSignUp && (
+            <>
+              <input
+                type="text"
+                placeholder="Votre prénom"
+                value={name}
+                onChange={e => setName(e.target.value)}
+                required
+                className="w-full p-3 border border-gray-300 rounded-xl"
+              />
+              <select required className="w-full p-3 border border-gray-300 rounded-xl" value={city} onChange={e => setCity(e.target.value)}>
+                <option value="">Votre ville</option>
+                {worldCities.map(city => (
+                  <option key={city.name} value={city.name}>{city.flag} {city.name}</option>
+                ))}
+              </select>
+            </>
+          )}
+          <input
+            type="email"
+            placeholder="Email"
+            value={email}
+            required
+            autoComplete="username"
+            onChange={e => setEmail(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-xl"
+          />
+          <input
+            type="password"
+            placeholder="Mot de passe"
+            value={password}
+            required
+            autoComplete="current-password"
+            onChange={e => setPassword(e.target.value)}
+            className="w-full p-3 border border-gray-300 rounded-xl"
+          />
+          {error && <div className="text-red-500 text-xs">{error}</div>}
+          <button type="submit" disabled={loading}
+            className="w-full bg-gradient-to-r from-purple-600 to-pink-500 text-white py-3 rounded-xl font-semibold">
+            {loading ? '...' : isSignUp ? "Créer un compte" : "Connexion"}
+          </button>
+        </form>
+        <div className="text-center text-xs text-gray-400 mt-4">
+          {isSignUp ? (
+            <>
+              Déjà un compte ? <span className="text-purple-600 cursor-pointer" onClick={() => setIsSignUp(false)}>Se connecter</span>
+            </>
+          ) : (
+            <>
+              Pas encore inscrit ? <span className="text-purple-600 cursor-pointer" onClick={() => setIsSignUp(true)}>Créer un compte</span>
+            </>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function MobileNav({ current, setView }) {
+  const navs = [
+    { key: "swipe", icon: "❤️", label: "Rencontres" },
+    { key: "leaderboard", icon: "🏆", label: "Classement" },
+    { key: "boost", icon: "⚡", label: "Boost" },
+    { key: "chat", icon: "💬", label: "Matchs" },
+  ];
+  return (
+    <nav className="bottom-nav">
+      {navs.map(nav => (
+        <button key={nav.key}
+          className={`flex flex-col items-center px-2 py-1 ${current === nav.key ? "text-purple-600 font-bold" : "text-gray-400"}`}
+          onClick={() => setView(nav.key)}>
+          <div className="text-xl">{nav.icon}</div>
+          <div className="text-[10px]">{nav.label}</div>
+        </button>
+      ))}
+    </nav>
+  );
+}
+
+// -- écrans simplifiés, code complet sur demande --
+function SwipeScreen() { return <div className="p-8 text-center">Rencontres (mobile demo)</div>; }
+function LeaderboardScreen() { return <div className="p-8 text-center">Classement (mobile demo)</div>; }
+function BoostScreen() { return <div className="p-8 text-center">Boost (mobile demo)</div>; }
+function ChatScreen() { return <div className="p-8 text-center">Matchs (mobile demo)</div>; }
+
+function App() {
+  const [user, setUser] = useState(null);
+  const [view, setView] = useState("swipe");
+
+  useEffect(() => {
+    const unsub = auth.onAuthStateChanged(u => setUser(u));
+    return () => unsub();
+  }, []);
+
+  if (!user) return <AuthScreen onAuth={setUser} />;
+
+  return (
+    <div className="w-full max-w-[430px] mx-auto pb-20">
+      {view === "swipe" && <SwipeScreen />}
+      {view === "leaderboard" && <LeaderboardScreen />}
+      {view === "boost" && <BoostScreen />}
+      {view === "chat" && <ChatScreen />}
+      <div className="fixed top-2 right-2">
+        <button onClick={() => auth.signOut()} className="text-xs bg-gray-200 px-2 py-1 rounded">Déconnexion</button>
+      </div>
+      <MobileNav current={view} setView={setView} />
+    </div>
+  );
+}
+
+ReactDOM.render(<App />, document.getElementById('root'));
+
+  </script>
+</body>
+</html>
